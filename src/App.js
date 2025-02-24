@@ -1,86 +1,56 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import './App.css'; // Import CSS file
+import React, { useState } from "react";
+import axios from "axios";
+import "./App.css"; // Import the unique CSS file
 
 function App() {
-  const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [result, setResult] = useState(null);
-  const [confidence, setConfidence] = useState(null);
-  const [loading, setLoading] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [result, setResult] = useState(null);
 
-  // Handle file selection
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setImage(file);
-    setPreview(URL.createObjectURL(file));
-    setResult(null); // Reset result
-  };
+    const handleFileChange = (event) => {
+        setSelectedFile(event.target.files[0]);
+    };
 
-  // Upload image to backend
-  const handleUpload = async () => {
-    if (!image) {
-      alert("Please select an image.");
-      return;
-    }
+    const handleUpload = async () => {
+        if (!selectedFile) {
+            alert("Please select an image first!");
+            return;
+        }
 
-    setLoading(true);
-    const formData = new FormData();
-    formData.append('image', image);
+        const formData = new FormData();
+        formData.append("image", selectedFile);
 
-    try {
-      const response = await axios.post('https://ai-1jrq.onrender.com/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+        try {
+            const response = await axios.post("http://localhost:5000/upload", formData, {
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+            setResult(response.data);
+        } catch (error) {
+            console.error("Error uploading image:", error);
+            alert("Failed to analyze image.");
+        }
+    };
 
-      setResult(response.data.result);
-      setConfidence(response.data.confidence);
-    } catch (error) {
-      console.error('Error uploading image:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return (
+        <div className="container">
+            <h2>🔍 AI Image Detector</h2>
 
-  return (
-    <div className="container">
-      <h1 className="title">AI Image Detector</h1>
+            <label htmlFor="file-upload" className="custom-file-upload">
+                📸 Choose Image
+            </label>
+            <input id="file-upload" type="file" onChange={handleFileChange} accept="image/*" />
 
-      <div className="upload-container">
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="file-input"
-        />
-        <button
-          onClick={handleUpload}
-          className="upload-button"
-        >
-          Detect Image
-        </button>
-      </div>
+            <button onClick={handleUpload}>🚀 Upload</button>
 
-      {preview && (
-        <div className="image-preview-container">
-          <img
-            src={preview}
-            alt="Preview"
-            className="image-preview"
-          />
+            {result && (
+                <div className="result-container">
+                    <h3>✅ Result: {result.isOriginal}</h3>
+                    {result.metadata && (
+                        <pre>{JSON.stringify(result.metadata, null, 2)}</pre>
+                    )}
+                </div>
+            )}
         </div>
-      )}
-
-      {loading && <p className="loading-text">Processing...</p>}
-
-      {result && (
-        <div className="result-container">
-          <h2 className="result-title">Result: {result}</h2>
-          <h3 className="confidence">Confidence: {confidence}%</h3>
-        </div>
-      )}
-    </div>
-  );
+    );
 }
 
 export default App;
